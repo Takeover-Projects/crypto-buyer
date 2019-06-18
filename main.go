@@ -93,12 +93,31 @@ func (a *KrakenApi) get_time() map[string]interface{} {
 	return result2
 }
 
+func (a *KrakenApi) get_asset_pairs() map[string]interface{} {
+
+	// get list of asset-pairs and info about them (fees, etc)
+
+	var result2 map[string]interface{}
+
+	req, err := http.NewRequest("POST", "https://api.kraken.com/0/public/AssetPairs", nil)
+
+	checkErr(err)
+	req.Header.Set("Api-key", a.key)
+	req.Header.Set("Api-Sign", a.secret)
+	resp, err := a.client.Do(req)
+	checkErr(err)
+	json.NewDecoder(resp.Body).Decode(&result2)
+	fmt.Println("DEBUG - ", result2)
+	return result2
+
+}
+
 func main() {
 
 	// create our Kraken Object
 	api := KrakenApi{
-		key:    "YOUR PERSONAL KRAKEN API KEY HERE",
-		secret: "YOUR SECRET KRAKEN API KEY HERE",
+		key:    "<YOUR API KEY HERE",
+		secret: "<YOUR SECRET KEY HERE",
 		client: &http.Client{},
 	}
 
@@ -110,9 +129,18 @@ func main() {
 			fmt.Println(testKeys[i], ": ", result2[testKeys[i]])
 		}
 	}
-	// test going a layer into the json
+	// test going a layer into the json through kraken's time endpoint
 	testTime := JsonDig(result2["result"], "rfc1123")
 	fmt.Println(testTime)
+
+	// test going multiple layers into a json through kraken's tradeable-pairs endpoint
+	assertPairResp := api.get_asset_pairs()
+	assetPairsKeys := getKeys(assertPairResp)
+	fmt.Println("keys are:\n", assetPairsKeys)
+	testPair := JsonDig(assertPairResp["result"], "BCHXBT")
+	fmt.Println(testPair)
+	testPairName := JsonDig(testPair, "wsname")
+	fmt.Println(testPairName)
 }
 
 // several calls, serveral errosr to wrap+check
