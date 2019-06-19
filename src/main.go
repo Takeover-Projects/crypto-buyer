@@ -27,6 +27,7 @@ var publicMethods = []string{
 	"Spread",
 }
 
+
 // List of valid private methods
 var privateMethods = []string{
 	"Balance",
