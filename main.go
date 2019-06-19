@@ -2,10 +2,11 @@
 package main
 
 import (
-	//	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 const (
@@ -97,7 +98,7 @@ func (a *KrakenApi) get_asset_pairs() map[string]interface{} {
 
 	// get list of asset-pairs and info about them (fees, etc)
 
-	var result2 map[string]interface{}
+	var data map[string]interface{}
 
 	req, err := http.NewRequest("POST", "https://api.kraken.com/0/public/AssetPairs", nil)
 
@@ -105,32 +106,60 @@ func (a *KrakenApi) get_asset_pairs() map[string]interface{} {
 	req.Header.Set("Api-key", a.key)
 	req.Header.Set("Api-Sign", a.secret)
 	resp, err := a.client.Do(req)
+	defer resp.Body.Close()
 	checkErr(err)
-	json.NewDecoder(resp.Body).Decode(&result2)
-	fmt.Println("DEBUG - ", result2)
-	return result2
+	json.NewDecoder(resp.Body).Decode(&data)
+	return data
+
+}
+
+func (a *KrakenApi) get_order_book(assetPair string) map[string]interface{} {
+	// given string "assetPair" of currency pair (example, BCHXBT)
+	// retrieve full orderbook
+	// returns array for asks and bids <price>, <volume>, <timestamp>
+
+	var data map[string]interface{}
+	params := url.Values{}
+	params.Add("pair", assetPair)
+	fmt.Println(params)
+	req, err := http.NewRequest("POST",
+		"https://api.kraken.com/0/public/Depth",
+		strings.NewReader(params.Encode()))
+	// NewReader reads bytes in as a string, params being a mapping-
+	// and .Encode() turning it to a bytes array
+
+	req.Header.Set("Api-key", a.key)
+	req.Header.Set("Api-Sign", a.secret)
+	resp, err := a.client.Do(req)
+	defer resp.Body.Close()
+	checkErr(err)
+	json.NewDecoder(resp.Body).Decode(&data)
+	return data
 
 }
 
 func main() {
 
+	// POC demo's - all of this will end up in a KrakenAPI Package
+
 	// create our Kraken Object
 	api := KrakenApi{
-		key:    "<YOUR API KEY HERE",
-		secret: "<YOUR SECRET KEY HERE",
+		key:    "NOT PUSHING MY API KEY",
+		secret: "OR THIS EITHER",
 		client: &http.Client{},
 	}
 
-	result2 := api.get_time()
-	fmt.Println(result2)
-	testKeys := getKeys(result2)
+	krakenTime := api.get_time()
+	fmt.Println(krakenTime)
+	testKeys := getKeys(krakenTime)
 	for i := range testKeys {
-		if result2[testKeys[i]] != nil {
-			fmt.Println(testKeys[i], ": ", result2[testKeys[i]])
+		if krakenTime[testKeys[i]] != nil {
+			fmt.Println(testKeys[i], ": ", krakenTime[testKeys[i]])
 		}
 	}
-	// test going a layer into the json through kraken's time endpoint
-	testTime := JsonDig(result2["result"], "rfc1123")
+
+	// TODO: deprecate JsonDig, replace with interface{}.(type)
+	testTime := JsonDig(krakenTime["result"], "rfc1123")
 	fmt.Println(testTime)
 
 	// test going multiple layers into a json through kraken's tradeable-pairs endpoint
@@ -138,9 +167,28 @@ func main() {
 	assetPairsKeys := getKeys(assertPairResp)
 	fmt.Println("keys are:\n", assetPairsKeys)
 	testPair := JsonDig(assertPairResp["result"], "BCHXBT")
-	fmt.Println(testPair)
 	testPairName := JsonDig(testPair, "wsname")
 	fmt.Println(testPairName)
+
+	// test getting full orderbook for a currency pair
+	orderBookTest := api.get_order_book("BCHXBT")
+	// fmt.Println(orderBookTest)
+	orderBookKeys := getKeys(orderBookTest)
+	fmt.Println(orderBookKeys)
+	testCurrencyOrders := JsonDig(orderBookTest["result"], "BCHXBT").(map[string]interface{})
+	fmt.Println(getKeys(testCurrencyOrders)) // returns asks and bids
+	var asks []interface{} = testCurrencyOrders["asks"].([]interface{})
+
+	// print columns of Prices/Volumes for Ask Orders
+	for i := 0; i < len(asks); i++ {
+		fmt.Println("Price:", asks[i].([]interface{})[0].(string))
+		fmt.Println("Volume:", asks[i].([]interface{})[1].(string), "\n")
+	}
+
+	// can we just use cast-methods on interfaces all the way down?
+	fmt.Println(orderBookTest["result"].(map[string]interface{})["BCHXBT"].(map[string]interface{})["asks"])
+	// YOU CAN!
+	// TODO: keep using cast-methods to drill down, deprecate "JsonDig()"
 }
 
 // several calls, serveral errosr to wrap+check
@@ -164,8 +212,9 @@ func getKeys(mapping map[string]interface{}) []string {
 	return keys
 }
 
-// layered jsons combing back as interface{} types need to be cast to mappings
-// as we see them
+// used for learning, I now know we can just use `.(type)` on blank interfaces
+// as we please.
+// TODO: DEPRECATE
 func JsonDig(mapToDig interface{}, name string) interface{} {
 	dug := mapToDig.(map[string]interface{})[name]
 	return dug
