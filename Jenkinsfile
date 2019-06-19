@@ -119,4 +119,3 @@ def notifyBuild(String buildStatus = 'STARTED') {
   slackSend (color: colorCode, message: summary)
 }
 view raw
-Jenkinsfile hosted with ❤ by GitHub 
