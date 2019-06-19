@@ -31,7 +31,7 @@ func Get_Time_Server(req *http.Request) (*http.Response, error) {
 	})
 
 }
-
+  
 func TestGetTime(t *testing.T) {
 
 	// retrieving unix epoch timestamp from Kraken API
