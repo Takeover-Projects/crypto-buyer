@@ -1,4 +1,4 @@
-node {
+node() {
     try{
         notifyBuild('STARTED')
         bitbucketStatusNotify(buildState: 'INPROGRESS')
