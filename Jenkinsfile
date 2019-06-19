@@ -1,4 +1,5 @@
-node {
+pipeline {
+  node {
     try{
         notifyBuild('STARTED')
         bitbucketStatusNotify(buildState: 'INPROGRESS')
@@ -91,6 +92,7 @@ node {
             bitbucketStatusNotify(buildState: 'SUCCESSFUL')
         }
     }
+  }
 }
 
 def notifyBuild(String buildStatus = 'STARTED') {
