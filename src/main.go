@@ -51,7 +51,6 @@ var privateMethods = []string{
 	"WithdrawCancel",
 }
 
-
 // These represent the minimum order sizes for the respective coins
 // Should be monitored through here: https://support.kraken.com/hc/en-us/articles/205893708-What-is-the-minimum-order-size-
 const (
