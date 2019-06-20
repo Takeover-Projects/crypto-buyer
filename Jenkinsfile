@@ -1,7 +1,7 @@
 pipeline {
     agent { docker { image 'golang' } }    
     
-    node {
+/*   node {
     // Install the desired Go version
     def root = tool name: 'Go 1.9', type: 'go'
  
@@ -11,7 +11,7 @@ pipeline {
     }
 }
 
-
+*/
     stages {
         stage('Build') {                
             steps {      
@@ -33,6 +33,6 @@ pipeline {
         }
     }
 }
-*/
+
     
 
