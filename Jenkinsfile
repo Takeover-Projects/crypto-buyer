@@ -6,7 +6,7 @@ pipeline {
             steps {
                     //List all our project files with 'go list ./... | grep -v /vendor/ | grep -v github.com | grep -v golang.org'
                     //Push our project files relative to ./src
-                    sh 'GOPATH=\$(which go)'
+                    sh 'GOPATH=\$(/usr/local/go/bin)'
                     sh 'cd $GOPATH && go list ./... | grep -v /vendor/ | grep -v github.com | grep -v golang.org > projectPaths'
                     
                     //Print them with 'awk '$0="./src/"$0' projectPaths' in order to get full relative path to $GOPATH
