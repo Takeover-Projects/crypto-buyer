@@ -1,4 +1,4 @@
-node('linux && x86_64 && go') {
+node {
     // Install the desired Go version
     def root = tool name: 'Go 1.9', type: 'go'
  
