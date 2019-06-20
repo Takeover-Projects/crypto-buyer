@@ -1,6 +1,7 @@
 package main
 
 import (
+	//"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -19,9 +20,7 @@ func TestGetKeys(t *testing.T) {
 }
 
 func Get_Time_Server(req *http.Request) (*http.Response, error) {
-
 	// mock for POST of Get_Time_Server used with httpmock
-
 	fmt.Println("running me!")
 	return httpmock.NewJsonResponse(200, map[string]interface{}{
 		"result": map[string]string{
@@ -29,9 +28,40 @@ func Get_Time_Server(req *http.Request) (*http.Response, error) {
 		},
 		"error": nil,
 	})
-
 }
-  
+
+func Get_Orderbooks_Server(req *http.Request) (*http.Response, error) {
+	testCurrency := CurrencyOrderbook{
+		Asks: [][]interface{}{{0.1, 0.2, 0.3}},
+		Bids: [][]interface{}{{0.1, 0.2, 0.3}},
+	}
+	testMap := make(map[string]CurrencyOrderbook)
+	testMap["BCHXBT"] = testCurrency
+	testBook := OrderBookResponse{
+		Result: testMap,
+		Errors: nil,
+	}
+	// TODO: figure out why we can't access url.params{} from within here
+	return httpmock.NewJsonResponse(200, testBook)
+}
+
+func TestGetOrderbooks(t *testing.T) {
+	// test retrieving and handling orderbooks
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder("POST", "https://api.kraken.com/0/public/Depth",
+		Get_Orderbooks_Server)
+	api := KrakenApi{
+		key:    "testkey1",
+		secret: "testkey2",
+		client: &http.Client{},
+	}
+	resp := api.get_order_book("BCHXBT")
+	if resp.Result["BCHXBT"].Asks[0][0] != 0.1 {
+		t.Error("ERROR - price did not match for TestGetOrderBooks")
+	}
+}
+
 func TestGetTime(t *testing.T) {
 
 	// retrieving unix epoch timestamp from Kraken API
