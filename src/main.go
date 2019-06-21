@@ -14,7 +14,7 @@ const (
 	API_VERSION    = "0"
 	API_USER_AGENT = "TestUser"
 )
-
+   
 // List of valid public methods
 var publicMethods = []string{
 	"Time",
@@ -26,7 +26,6 @@ var publicMethods = []string{
 	"Trades",
 	"Spread",
 }
-
 // List of valid private methods
 var privateMethods = []string{
 	"Balance",
