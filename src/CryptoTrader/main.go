@@ -78,8 +78,8 @@ func main() {
 
 	// create our Kraken Object
 	api := KrakenTypes.KrakenApi{
-		Key:    "PUBLIC KEY HERE",
-		Secret: "PRIVATE KEY HERE",
+		Key:    "FAKE_KEY",
+		Secret: "FAKE_SECRET",
 		Client: &http.Client{},
 	}
 
@@ -99,12 +99,19 @@ func main() {
 
 	// test getting full orderbook for a currency pair
 	orderBookTest := api.Get_order_book("BCHXBT")
+	fmt.Println("Debug - orderbooktest is", orderBookTest)
 	fmt.Println("Price:", orderBookTest.Result["BCHXBT"].Asks[0][0])
 	fmt.Println("Volume:", orderBookTest.Result["BCHXBT"].Asks[0][1])
 
 	// test getting balance
-	api.Get_balance()
+	balance := api.Get_balance()
+	fmt.Println("balance is", balance.Result)
 
+	// buy BCH with XBT
+	api.Submit_Order("BCHXBT", "buy", "0.05")
+
+	// sell BCH for XBT
+	api.Submit_Order("BCHXBT", "sell", "0.05")
 }
 
 // several calls, serveral errosr to wrap+check
@@ -127,3 +134,4 @@ func getKeys(mapping map[string]interface{}) []string {
 	}
 	return keys
 }
+
