@@ -2,11 +2,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
+
+	"github.com/KrakenTypes"
 )
 
 const (
@@ -73,97 +72,18 @@ const (
 	MinimumUSDT = 5.0
 )
 
-type KrakenApi struct {
-	key    string
-	secret string
-	client *http.Client
-}
-
-// orderbookresponse hard-coded
-type OrderBookResponse struct {
-	Result map[string]CurrencyOrderbook
-	Errors map[string][]string
-}
-
-type CurrencyOrderbook struct {
-	Asks [][]interface{} `json:"asks"`
-	Bids [][]interface{} `json:"bids"`
-}
-
-type AssetPairResponse struct {
-	Result map[string]interface{}
-	Errors map[string][]string
-}
-
-func (a *KrakenApi) get_time() map[string]interface{} {
-
-	var timeResp map[string]interface{}
-	// create a new request
-	req, err := http.NewRequest("POST", "https://api.kraken.com/0/public/Time", nil)
-	checkErr(err)
-	req.Header.Set("Api-key", a.key)
-	req.Header.Set("Api-Sign", a.secret)
-	resp, err := a.client.Do(req)
-	checkErr(err)
-	json.NewDecoder(resp.Body).Decode(&timeResp)
-	return timeResp
-}
-
-func (a *KrakenApi) get_asset_pairs() AssetPairResponse {
-
-	// get list of asset-pairs and info about them (fees, etc)
-
-	req, err := http.NewRequest("POST", "https://api.kraken.com/0/public/AssetPairs", nil)
-	checkErr(err)
-	req.Header.Set("Api-key", a.key)
-	req.Header.Set("Api-Sign", a.secret)
-	resp, err := a.client.Do(req)
-	defer resp.Body.Close()
-	checkErr(err)
-	assetPairResp := AssetPairResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&assetPairResp)
-	checkErr(err)
-	return assetPairResp
-
-}
-
-func (a *KrakenApi) get_order_book(assetPair string) OrderBookResponse {
-	// given string "assetPair" of currency pair (example, BCHXBT)
-	// retrieve full orderbook
-	// returns array for asks and bids <price>, <volume>, <timestamp>
-
-	//var data map[string]interface{}
-	params := url.Values{}
-	params.Add("pair", assetPair)
-	req, err := http.NewRequest("POST",
-		"https://api.kraken.com/0/public/Depth",
-		strings.NewReader(params.Encode()))
-	// NewReader reads bytes in as a string, params being a mapping-
-	// and .Encode() turning it to a bytes array
-
-	req.Header.Set("Api-key", a.key)
-	req.Header.Set("Api-Sign", a.secret)
-	resp, err := a.client.Do(req)
-	checkErr(err)
-	defer resp.Body.Close()
-	orderResp := OrderBookResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&orderResp)
-	checkErr(err)
-	return orderResp
-}
-
 func main() {
 
 	// POC demo's - all of this will end up in a KrakenAPI Package
 
 	// create our Kraken Object
-	api := KrakenApi{
-		key:    "YOUR KEY HERE",
-		secret: "YOUR SECRET KEY HERE",
-		client: &http.Client{},
+	api := KrakenTypes.KrakenApi{
+		Key:    "PUBLIC KEY HERE",
+		Secret: "PRIVATE KEY HERE",
+		Client: &http.Client{},
 	}
 
-	krakenTime := api.get_time()
+	krakenTime := api.Get_time()
 	fmt.Println("Time according to Kraken:", krakenTime)
 	testKeys := getKeys(krakenTime)
 	for i := range testKeys {
@@ -173,14 +93,17 @@ func main() {
 	}
 
 	// test getting valid asset pairs from Kraken
-	assertPairResp := api.get_asset_pairs()
+	assertPairResp := api.Get_asset_pairs()
 	assetPairsKeys := getKeys(assertPairResp.Result)
 	fmt.Println("Valid Asset Pairs are:\n", assetPairsKeys)
 
 	// test getting full orderbook for a currency pair
-	orderBookTest := api.get_order_book("BCHXBT")
+	orderBookTest := api.Get_order_book("BCHXBT")
 	fmt.Println("Price:", orderBookTest.Result["BCHXBT"].Asks[0][0])
 	fmt.Println("Volume:", orderBookTest.Result["BCHXBT"].Asks[0][1])
+
+	// test getting balance
+	api.Get_balance()
 
 }
 
